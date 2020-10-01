@@ -57,9 +57,12 @@ To ensure that it is installed propery call:
     $ openssl version -e
     ENGINESDIR: "/usr/lib/i386-linux-gnu/engines-1.1"
 
-Then check that `gost.so` there
-
-    # ls /usr/lib/i386-linux-gnu/engines-1.1
+Example:
+    # cd into the the same folder where this INSTALL.md file is
+    # mkdir build
+    # cd ./build
+    # cmake -DOPENSSL_ROOT_DIR=<Openssl3 install folder> -DOPENSSL_ENGINES_DIR=<your gost engine installation path> -DCMAKE_BUILD_TYPE=Debug ..
+    # cmake --build . --target install --config Debug --verbose
 
 Finally, to start using GOST Engine through OpenSSL, you should edit
 `openssl.cnf` configuration file as specified below.
