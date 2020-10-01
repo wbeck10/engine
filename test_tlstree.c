@@ -6,8 +6,10 @@
  */
 # include <stdio.h>
 # include <string.h>
+# include <openssl/engine.h>
 # include <openssl/err.h>
 # include <openssl/evp.h>
+# include "gost_lcl.h"
 
 static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
 {
@@ -20,6 +22,29 @@ static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
         fprintf(f, " %02x", s[n]);
     }
     fprintf(f, "\n");
+}
+
+// Bind function from within the engine - made visible
+extern int bind_gost(ENGINE* e, const char* id);
+
+void gost_engine_load(void)
+{
+    ENGINE *e = ENGINE_new();
+    if (!e)
+    {
+        printf("ERROR: Unable to create new engine\n");
+        return;
+    }
+
+    if (!bind_gost(e, "gost"))
+    {
+        printf("ERROR: Unable to register gost engine\n");
+        return;
+    }
+
+    ENGINE_add(e);
+    ENGINE_free(e);
+    ERR_clear_error();
 }
 
 int main(void)
@@ -91,6 +116,9 @@ int main(void)
 
 	unsigned char data63_processed[4096+16];
 	unsigned char mac63[16];
+
+	// Load static engine
+	gost_engine_load();
 
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 	EVP_CIPHER_CTX *enc = NULL;

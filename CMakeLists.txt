@@ -184,53 +184,54 @@ set(GOST_ENGINE_SOURCE_FILES
         )
 
 add_executable(test_digest test_digest.c)
-target_link_libraries(test_digest gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_digest gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME digest
 	COMMAND test_digest)
 
 add_executable(test_ciphers test_ciphers.c)
-target_link_libraries(test_ciphers gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_ciphers gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME ciphers
 	COMMAND test_ciphers)
 
 add_executable(test_curves test_curves.c)
-target_link_libraries(test_curves gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_curves gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME curves
 	COMMAND test_curves)
 
 add_executable(test_params test_params.c)
-target_link_libraries(test_params gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_params gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME parameters
 	COMMAND test_params)
 
 add_executable(test_derive test_derive.c)
-target_link_libraries(test_derive gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_derive gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME derive
 	COMMAND test_derive)
 
 add_executable(test_sign test_sign.c)
-target_link_libraries(test_sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_sign gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME sign/verify
 	COMMAND test_sign)
 
 add_executable(test_tls test_tls.c)
-target_link_libraries(test_tls gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+# Add CRYPTO and SSL lib dependency twice because of circula dependencies between them
+target_link_libraries(test_tls gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} pthread dl)
 add_test(NAME TLS
 	COMMAND test_tls)
 
 add_executable(test_context test_context.c)
-target_link_libraries(test_context gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_context gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME context
 	COMMAND test_context)
 
 add_executable(test_keyexpimp test_keyexpimp.c)
 #target_compile_definitions(test_keyexpimp PUBLIC -DOPENSSL_LOAD_CONF)
-target_link_libraries(test_keyexpimp gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_keyexpimp gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME keyexpimp
 	COMMAND test_keyexpimp)
 
 add_executable(test_gost89 test_gost89.c)
-target_link_libraries(test_gost89 gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_gost89 gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 add_test(NAME gost89
 	COMMAND test_gost89)
 
@@ -249,7 +250,7 @@ if(NOT SKIP_PERL_TESTS)
 endif()
 
 add_executable(sign benchmark/sign.c)
-target_link_libraries(sign gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB})
+target_link_libraries(sign gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} ${CLOCK_GETTIME_LIB} pthread dl)
 
 # All that may need to load just built engine will have path to it defined.
 set(BINARY_TESTS_TARGETS
@@ -262,31 +263,29 @@ set(BINARY_TESTS_TARGETS
         test_context
         test_keyexpimp
         test_gost89
-	test_tls
+        test_tls
         )
 set_property(TARGET ${BINARY_TESTS_TARGETS} APPEND PROPERTY COMPILE_DEFINITIONS ENGINE_DIR="${OUTPUT_DIRECTORY}")
 
-add_library(gost_core STATIC ${GOST_LIB_SOURCE_FILES})
-set_target_properties(gost_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(gost_core3 STATIC ${GOST_LIB_SOURCE_FILES})
+set_target_properties(gost_core3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_library(gost_engine SHARED ${GOST_ENGINE_SOURCE_FILES})
-set_target_properties(gost_engine PROPERTIES PREFIX "" OUTPUT_NAME "gost")
-set_target_properties(gost_engine PROPERTIES VERSION ${GOST_SOVERSION} SOVERSION ${GOST_SOVERSION})
-target_link_libraries(gost_engine gost_core ${OPENSSL_CRYPTO_LIBRARY})
+add_library(gost_engine3 STATIC ${GOST_ENGINE_SOURCE_FILES})
+set_target_properties(gost_engine3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(GOST_SUM_SOURCE_FILES
         gostsum.c
         )
 
 add_executable(gostsum ${GOST_SUM_SOURCE_FILES})
-target_link_libraries(gostsum gost_core ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(gostsum gost_core3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 
 set(GOST_12_SUM_SOURCE_FILES
         gost12sum.c
         )
 
 add_executable(gost12sum ${GOST_12_SUM_SOURCE_FILES})
-target_link_libraries(gost12sum gost_core)
+target_link_libraries(gost12sum gost_core3)
 
 set_source_files_properties(tags PROPERTIES GENERATED true)
 add_custom_target(tags
@@ -298,16 +297,17 @@ add_custom_target(tcl_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tcl_tests)
 
 add_executable(test_tlstree test_tlstree.c)
-target_link_libraries(test_tlstree PUBLIC ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(test_tlstree gost_core3 gost_engine3 gost_core3 gost_engine3 ${OPENSSL_CRYPTO_LIBRARY} pthread dl)
 
 # install
 set(OPENSSL_MAN_INSTALL_DIR ${CMAKE_INSTALL_MANDIR}/man1)
 
-install(TARGETS gost_engine gostsum gost12sum EXPORT GostEngineConfig
+install(TARGETS gost_engine3 gostsum gost12sum EXPORT GostEngineConfig
+        ARCHIVE  DESTINATION ${OUTPUT_DIRECTORY}
         LIBRARY  DESTINATION ${OPENSSL_ENGINES_DIR}
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES gostsum.1 gost12sum.1 DESTINATION ${OPENSSL_MAN_INSTALL_DIR})
 if (MSVC)
- install(FILES $<TARGET_PDB_FILE:gost_engine> DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
+ install(FILES $<TARGET_PDB_FILE:gost_engine3> DESTINATION ${OPENSSL_ENGINES_DIR} OPTIONAL)
  install(FILES $<TARGET_PDB_FILE:gostsum> $<TARGET_PDB_FILE:gost12sum> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
 endif()

@@ -33,6 +33,29 @@ static void hexdump(FILE *f, const char *title, const unsigned char *s, int l)
     fprintf(f, "\n");
 }
 
+// Bind function from within the engine - made visible
+extern int bind_gost(ENGINE* e, const char* id);
+
+void gost_engine_load(void)
+{
+    ENGINE *e = ENGINE_new();
+    if (!e)
+    {
+        printf("ERROR: Unable to create new engine\n");
+        return;
+    }
+
+    if (!bind_gost(e, "gost"))
+    {
+        printf("ERROR: Unable to register gost engine\n");
+        return;
+    }
+
+    ENGINE_add(e);
+    ENGINE_free(e);
+    ERR_clear_error();
+}
+
 int main(void)
 {
     const unsigned char shared_key[] = {
@@ -106,6 +129,11 @@ int main(void)
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
+
+    // Load static engine
+    gost_engine_load();
+
+    // Use engine
     ENGINE *eng;
     T(eng = ENGINE_by_id("gost"));
     T(ENGINE_init(eng));

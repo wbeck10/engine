@@ -68,6 +68,7 @@ GOST_cipher *gost_cipher_array[] = {
     &Gost28147_89_cnt_cipher,
     &Gost28147_89_cnt_12_cipher,
     &Gost28147_89_cbc_cipher,
+    &Gost28147_89_ecb_cipher,
     &grasshopper_ecb_cipher,
     &grasshopper_cbc_cipher,
     &grasshopper_cfb_cipher,
@@ -194,7 +195,7 @@ static int gost_engine_destroy(ENGINE* e) {
     return 1;
 }
 
-static int bind_gost(ENGINE* e, const char* id) {
+int bind_gost(ENGINE* e, const char* id) {
     int ret = 0;
     if (id != NULL && strcmp(id, engine_gost_id) != 0)
         return 0;

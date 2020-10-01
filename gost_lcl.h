@@ -332,6 +332,7 @@ void GOST_deinit_cipher(GOST_cipher *c);
 
 extern GOST_cipher Gost28147_89_cipher;
 extern GOST_cipher Gost28147_89_cbc_cipher;
+extern GOST_cipher Gost28147_89_ecb_cipher;
 extern GOST_cipher Gost28147_89_cnt_cipher;
 extern GOST_cipher Gost28147_89_cnt_12_cipher;
 extern GOST_cipher magma_ctr_cipher;

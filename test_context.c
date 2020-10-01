@@ -216,6 +216,7 @@ static struct testcase_cipher {
     { NID_gost89_cnt, },
     { NID_gost89_cnt_12, },
     { NID_gost89_cbc, },
+    { NID_gost89_ecb, },
     { NID_grasshopper_ecb, },
     { NID_grasshopper_cbc, },
     { NID_grasshopper_cfb, },
@@ -241,6 +242,30 @@ static struct testcase_digest {
     { NID_id_tc26_cipher_gostr3412_2015_kuznyechik_ctracpkm_omac, 1 },
     { 0 },
 };
+
+// Bind function from within the engine - made visible
+extern int bind_gost(ENGINE* e, const char* id);
+
+void gost_engine_load(void)
+{
+    ENGINE *e = ENGINE_new();
+    if (!e)
+    {
+        printf("ERROR: Unable to create new engine\n");
+        return;
+    }
+
+    if (!bind_gost(e, "gost"))
+    {
+        printf("ERROR: Unable to register gost engine\n");
+        return;
+    }
+
+    ENGINE_add(e);
+    ENGINE_free(e);
+    ERR_clear_error();
+}
+
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -248,6 +273,10 @@ int main(int argc, char **argv)
     setenv("OPENSSL_ENGINES", ENGINE_DIR, 0);
     OPENSSL_add_all_algorithms_conf();
     ERR_load_crypto_strings();
+
+    // Load static engine
+    gost_engine_load();
+
     ENGINE *eng;
     T(eng = ENGINE_by_id("gost"));
     T(ENGINE_init(eng));

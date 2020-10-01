@@ -27,6 +27,8 @@ static int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                             const unsigned char *iv, int enc);
 static int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                                 const unsigned char *iv, int enc);
+static int gost_cipher_init_ecb(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                                const unsigned char *iv, int enc);
 static int gost_cipher_init_cpa(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                                 const unsigned char *iv, int enc);
 static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
@@ -37,6 +39,9 @@ static int gost_cipher_do_cfb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               const unsigned char *in, size_t inl);
 /* Handles block of data in CBC mode */
 static int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                              const unsigned char *in, size_t inl);
+/* Handles block of data in ECB mode */
+static int gost_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               const unsigned char *in, size_t inl);
 /* Handles block of data in CNT mode */
 static int gost_cipher_do_cnt(EVP_CIPHER_CTX *ctx, unsigned char *out,
@@ -162,6 +167,14 @@ GOST_cipher Gost28147_89_cbc_cipher = {
     .flags = EVP_CIPH_CBC_MODE,
     .init = gost_cipher_init_cbc,
     .do_cipher = gost_cipher_do_cbc,
+};
+
+GOST_cipher Gost28147_89_ecb_cipher = {
+    .nid = NID_gost89_ecb,
+    .template = &gost_template_cipher,
+    .flags = EVP_CIPH_ECB_MODE,
+    .init = gost_cipher_init_ecb,
+    .do_cipher = gost_cipher_do_ecb,
 };
 
 GOST_cipher Gost28147_89_cnt_cipher = {
@@ -309,6 +322,7 @@ static struct gost_cipher_info gost_cipher_list[] = {
      1},
     {NID_id_tc26_gost_28147_param_Z, &Gost28147_TC26ParamSetZ, 1},
     {NID_id_Gost28147_89_TestParamSet, &Gost28147_TestParamSet, 1},
+    {NID_id_GostR3411_94_TestParamSet, &GostR3411_94_TestParamSet, 1},
     {NID_undef, NULL, 0}
 };
 
@@ -427,7 +441,7 @@ static int gost_cipher_init_cp_12(EVP_CIPHER_CTX *ctx,
 static int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                      const unsigned char *iv, int enc)
 {
-    return gost_cipher_init_param(ctx, key, iv, enc, NID_undef,
+    return gost_cipher_init_param(ctx, key, iv, enc, NID_id_GostR3411_94_TestParamSet,
                                   EVP_CIPH_CFB_MODE);
 }
 
@@ -435,8 +449,16 @@ static int gost_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 static int gost_cipher_init_cbc(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                          const unsigned char *iv, int enc)
 {
-    return gost_cipher_init_param(ctx, key, iv, enc, NID_undef,
+    return gost_cipher_init_param(ctx, key, iv, enc, NID_id_GostR3411_94_TestParamSet,
                                   EVP_CIPH_CBC_MODE);
+}
+
+/* Initializes EVP_CIPHER_CTX with default values */
+static int gost_cipher_init_ecb(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                         const unsigned char *iv, int enc)
+{
+    return gost_cipher_init_param(ctx, key, iv, enc, NID_id_GostR3411_94_TestParamSet,
+                                  EVP_CIPH_ECB_MODE);
 }
 
 /* Initializes EVP_CIPHER_CTX with default values */
@@ -551,6 +573,31 @@ static void gost_cnt_next(void *ctx, unsigned char *iv, unsigned char *buf)
     c->count = c->count % 1024 + 8;
 }
 
+/* GOST encryption in ECB mode */
+int gost_cipher_do_ecb(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                       const unsigned char *in, size_t inl)
+{
+    const unsigned char *in_ptr = in;
+    unsigned char *out_ptr = out;
+    struct ossl_gost_cipher_ctx *c = EVP_CIPHER_CTX_get_cipher_data(ctx);
+    if (EVP_CIPHER_CTX_encrypting(ctx)) {
+        while (inl > 0) {
+            gostcrypt(&(c->cctx), in_ptr, out_ptr);
+            out_ptr += 8;
+            in_ptr += 8;
+            inl -= 8;
+        }
+    } else {
+        while (inl > 0) {
+            gostdecrypt(&(c->cctx), in_ptr, out_ptr);
+            out_ptr += 8;
+            in_ptr += 8;
+            inl -= 8;
+        }
+    }
+    return 1;
+}
+
 /* GOST encryption in CBC mode */
 static int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
                        const unsigned char *in, size_t inl)
@@ -575,11 +622,13 @@ static int gost_cipher_do_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out,
         }
     } else {
         while (inl > 0) {
+            unsigned char tmpiv[8];
             gostdecrypt(&(c->cctx), in_ptr, b);
+            memcpy(tmpiv, in_ptr, 8);
             for (i = 0; i < 8; i++) {
                 out_ptr[i] = iv[i] ^ b[i];
             }
-            memcpy(iv, in_ptr, 8);
+            memcpy(iv, tmpiv, 8);
             out_ptr += 8;
             in_ptr += 8;
             inl -= 8;

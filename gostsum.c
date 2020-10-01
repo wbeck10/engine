@@ -45,6 +45,12 @@ void help()
 #ifndef O_BINARY
 # define O_BINARY 0
 #endif
+int pthread_atfork (void (*__prepare) (void),
+                 void (*__parent) (void),
+                 void (*__child) (void))
+                 {
+                 return 1;
+                 }
 
 int main(int argc, char **argv)
 {
